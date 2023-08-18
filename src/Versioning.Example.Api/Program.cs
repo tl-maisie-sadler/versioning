@@ -23,12 +23,13 @@ static void DetectIgnoreDataMemberAttribute(JsonTypeInfo typeInfo)
 
     foreach (JsonPropertyInfo propertyInfo in typeInfo.Properties)
     {
-        if (propertyInfo.AttributeProvider is ICustomAttributeProvider provider
-            && provider.IsDefined(typeof(FromVersionAttribute), inherit: true))
+        if (propertyInfo.AttributeProvider is ICustomAttributeProvider provider)
         {
             var fromVersion = provider
                 .GetCustomAttributes(typeof(FromVersionAttribute), inherit: true)
                 .FirstOrDefault();
+            if (fromVersion == null) continue;
+
             var minVersion = (fromVersion as FromVersionAttribute).MinimumVersion;
 
             propertyInfo.ShouldSerialize = (obj, value) =>
