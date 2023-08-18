@@ -42,8 +42,8 @@ static void DetectIgnoreDataMemberAttribute(JsonTypeInfo typeInfo)
     }
 }
 
-KnownTlVersions.Instance.Register(Versions.V_2023_01_31);
-KnownTlVersions.Instance.Register(Versions.V_2023_06_30);
+KnownTlVersions.Instance.Register(Versions._v_2023_01_31);
+KnownTlVersions.Instance.Register(Versions._v_2023_06_30);
 
 var app = builder.Build();
 
@@ -63,8 +63,8 @@ public partial class Program { }
 
 internal static class Versions
 {
-    internal const string V_2023_01_31 = "2023-01-31";
-    internal const string V_2023_06_30 = "2023-06-30";
+    public const string _v_2023_01_31 = "2023-01-31";
+    public const string _v_2023_06_30 = "2023-06-30";
 }
 
 public class KnownTlVersions
@@ -101,10 +101,10 @@ public record Response
 
     public string parameter { get; set; }
 
-    [FromVersion(Versions.V_2023_06_30)]
+    [FromVersion(Versions._v_2023_06_30)]
     public int? a_number { get; set; }
 
-    [FromVersion(Versions.V_2023_06_30)]
+    [FromVersion(Versions._v_2023_06_30)]
     public string? another_parameter { get; set; }
 }
 

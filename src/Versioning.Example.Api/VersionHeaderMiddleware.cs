@@ -34,9 +34,9 @@ internal static class VersionExtensions
         {
             var date = DateOnly.ParseExact(version.ToString(), "yyyy-MM-dd");
             if (date >= new DateOnly(2023, 06, 30))
-                return Versions.V_2023_06_30;
+                return Versions._v_2023_06_30;
 
-            return Versions.V_2023_01_31;
+            return Versions._v_2023_01_31;
         }
 
         throw new InvalidOperationException("No version set");
