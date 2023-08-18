@@ -29,14 +29,14 @@ static void DetectIgnoreDataMemberAttribute(JsonTypeInfo typeInfo)
                 .GetCustomAttributes(typeof(FromVersionAttribute), inherit: true)
                 .FirstOrDefault();
             if (fromVersion == null) continue;
-
-            var minVersion = (fromVersion as FromVersionAttribute).MinimumVersion;
+            if (fromVersion is not FromVersionAttribute fromVersionAttribute) continue;
 
             propertyInfo.ShouldSerialize = (obj, value) =>
             {
                 // obj = class
                 // value = property
-                return Activity.Current?.GetTagItem("version")?.ToString() != minVersion;
+                return (int)Activity.Current.GetTlVersion()
+                    != fromVersionAttribute.MinimumVersion;
             };
         }
     }
@@ -49,8 +49,6 @@ app.UseMiddleware<VersionHeaderMiddleware>();
 app.MapGet("/", async (HttpContext httpContext) =>
 {
     var handler = httpContext.RequestServices.GetRequiredService<InternalHandler>();
-
-    var version = httpContext.Request.GetTlVersion();
     var result = await handler.Invoke();
 
     return new Response(result.param1, result.param2, result.number1);
@@ -59,6 +57,15 @@ app.MapGet("/", async (HttpContext httpContext) =>
 app.Run();
 
 public partial class Program { }
+
+enum TlVersion
+{
+    // Not serialized but will be used in >= conditions
+    // Important to keep dates ordered by earlier date <= later date
+    Unknown = 0,
+    V_2023_01_31 = 1,
+    V_2023_06_30 = 2,
+}
 
 public record Response
 {
@@ -71,19 +78,19 @@ public record Response
 
     public string parameter { get; set; }
 
-    [FromVersion("2023-06-30")]
+    [FromVersion((int)TlVersion.V_2023_06_30)]
     public int? a_number { get; set; }
 
-    [FromVersion("2023-06-30")]
+    [FromVersion((int)TlVersion.V_2023_06_30)]
     public string? another_parameter { get; set; }
 }
 
 [AttributeUsage(AttributeTargets.Property, AllowMultiple = false)]
 public class FromVersionAttribute : Attribute
 {
-    public string MinimumVersion { get; }
+    public int MinimumVersion { get; }
 
-    public FromVersionAttribute(string minimumVersion)
+    public FromVersionAttribute(int minimumVersion)
     {
         MinimumVersion = minimumVersion;
     }

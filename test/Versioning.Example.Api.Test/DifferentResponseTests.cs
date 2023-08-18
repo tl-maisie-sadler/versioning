@@ -14,14 +14,14 @@ public class DifferentResponseTests
     }
 
     [Fact]
-    public async void Version_2023_02_31()
+    public async void Version_2023_02_11()
     {
         // Arrange
         using var fixture = new TestServerFixture();
         fixture.OutputHelper = _outputHelper;
         using var httpClient = fixture.CreateClient();
 
-        httpClient.DefaultRequestHeaders.Add("Tl-Version", "2023-02-31");
+        httpClient.DefaultRequestHeaders.Add("Tl-Version", "2023-02-11");
 
         // Act
         var response = await httpClient.GetAsync("/");

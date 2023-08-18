@@ -20,7 +20,7 @@ public class ApiVersionUsedTests
         fixture.OutputHelper = _outputHelper;
         using var httpClient = fixture.CreateClient();
 
-        httpClient.DefaultRequestHeaders.Add("Tl-Version", "2023-02-31");
+        httpClient.DefaultRequestHeaders.Add("Tl-Version", "2023-02-11");
 
         // Act
         var response = await httpClient.GetAsync("/");
