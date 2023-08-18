@@ -5,7 +5,10 @@ app.UseMiddleware<VersionHeaderMiddleware>();
 
 app.MapGet("/", () =>
 {
-    return "Hello World!";
+    return new {
+        parameter = "value 1",
+        another_parameter = "value 2",
+    };
 });
 
 app.Run();
