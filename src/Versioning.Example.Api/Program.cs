@@ -1,6 +1,7 @@
 using System.Diagnostics;
-using System.Text.Json;
+using System.Reflection;
 using System.Text.Json.Serialization;
+using System.Text.Json.Serialization.Metadata;
 using Microsoft.AspNetCore.Http.Json;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -9,7 +10,36 @@ builder.Services.AddSingleton<InternalHandler>();
 builder.Services.Configure<JsonOptions>(options =>
 {
     options.SerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
+    options.SerializerOptions.TypeInfoResolver = new DefaultJsonTypeInfoResolver
+    {
+        Modifiers = { DetectIgnoreDataMemberAttribute }
+    };
 });
+
+static void DetectIgnoreDataMemberAttribute(JsonTypeInfo typeInfo)
+{
+    if (typeInfo.Kind != JsonTypeInfoKind.Object)
+        return;
+
+    foreach (JsonPropertyInfo propertyInfo in typeInfo.Properties)
+    {
+        if (propertyInfo.AttributeProvider is ICustomAttributeProvider provider
+            && provider.IsDefined(typeof(FromVersionAttribute), inherit: true))
+        {
+            var fromVersion = provider
+                .GetCustomAttributes(typeof(FromVersionAttribute), inherit: true)
+                .FirstOrDefault();
+            var minVersion = (fromVersion as FromVersionAttribute).MinimumVersion;
+
+            propertyInfo.ShouldSerialize = (obj, value) =>
+            {
+                // obj = class
+                // value = property
+                return Activity.Current?.GetTagItem("version")?.ToString() != minVersion;
+            };
+        }
+    }
+}
 
 var app = builder.Build();
 
@@ -29,7 +59,6 @@ app.Run();
 
 public partial class Program { }
 
-[FromVersionConverter<Response>()]
 public record Response
 {
     public Response(string parameter, string? anotherParameter, int? aNumber)
@@ -48,53 +77,6 @@ public record Response
     public string? another_parameter { get; set; }
 }
 
-public class FromVersionConverter<T> : JsonConverter<T>
-{
-    public override T Read(
-        ref Utf8JsonReader reader,
-        Type typeToConvert,
-        JsonSerializerOptions options) => throw new InvalidOperationException("Model used for serialization only");
-
-    public override void Write(
-        Utf8JsonWriter writer,
-        T? objectToWrite,
-        JsonSerializerOptions options)
-    {
-        if (objectToWrite == null)
-        {
-            writer.WriteNull("ohh");
-            return;
-        }
-        writer.WriteStartObject();
-        foreach (var property in objectToWrite.GetType().GetProperties())
-        {
-            var customAttr = property.CustomAttributes
-                .Where(s => s.AttributeType == typeof(FromVersionAttribute))
-                .FirstOrDefault();
-
-            void WriteProperty()
-            {
-                writer.WritePropertyName(property.Name);
-
-                var valueConverter = (JsonConverter<object>)options.GetConverter(property.PropertyType!);
-                valueConverter.Write(writer, property.GetValue(objectToWrite).ToString(), options);
-            }
-            if (customAttr != null)
-            {
-                var tag = Activity.Current?.GetTagItem("version")?.ToString();
-                if (tag == null
-                    || tag != customAttr.ConstructorArguments[0].Value?.ToString())
-                    WriteProperty();
-            }
-            else
-            {
-                WriteProperty();
-            }
-        }
-        writer.WriteEndObject();
-    }
-}
-
 [AttributeUsage(AttributeTargets.Property, AllowMultiple = false)]
 public class FromVersionAttribute : Attribute
 {
@@ -103,14 +85,5 @@ public class FromVersionAttribute : Attribute
     public FromVersionAttribute(string minimumVersion)
     {
         MinimumVersion = minimumVersion;
-    }
-}
-
-[AttributeUsage(AttributeTargets.Class, AllowMultiple = false)]
-public class FromVersionConverterAttribute<T> : JsonConverterAttribute
-{
-    public override JsonConverter? CreateConverter(Type _)
-    {
-        return new FromVersionConverter<T>();
     }
 }
