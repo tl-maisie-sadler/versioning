@@ -30,13 +30,9 @@ public class DifferentResponseTests
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         var responseJson = JsonNode.Parse(await response.Content.ReadAsStringAsync())!.AsObject();
 
-        Assert.Equal(3, responseJson.Count());
+        Assert.Equal(1, responseJson.Count());
         Assert.True(responseJson.TryGetPropertyValue("parameter", out var parameterVal1));
-        Assert.True(responseJson.TryGetPropertyValue("another_parameter", out var parameterVal2));
-        Assert.True(responseJson.TryGetPropertyValue("a_number", out var parameterVal3));
         Assert.Equal("value 1", parameterVal1!.ToString());
-        Assert.Equal("value 2", parameterVal2!.ToString());
-        Assert.Equal("23", parameterVal3!.ToString());
     }
 
     [Fact]
@@ -56,8 +52,12 @@ public class DifferentResponseTests
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         var responseJson = JsonNode.Parse(await response.Content.ReadAsStringAsync())!.AsObject();
 
-        Assert.Equal(1, responseJson.Count());
+        Assert.Equal(3, responseJson.Count());
         Assert.True(responseJson.TryGetPropertyValue("parameter", out var parameterVal1));
+        Assert.True(responseJson.TryGetPropertyValue("another_parameter", out var parameterVal2));
+        Assert.True(responseJson.TryGetPropertyValue("a_number", out var parameterVal3));
         Assert.Equal("value 1", parameterVal1!.ToString());
+        Assert.Equal("value 2", parameterVal2!.ToString());
+        Assert.Equal("23", parameterVal3!.ToString());
     }
 }

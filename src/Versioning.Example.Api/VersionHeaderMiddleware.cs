@@ -13,9 +13,9 @@ public class VersionHeaderMiddleware
     {
         try
         {
-            var (version, vs) = context.Request.GetTlVersion();
-            Activity.Current?.SetTag("version", version);
-            context.Response.Headers.Add("Tl-Version", vs);
+            var version = context.Request.GetTlVersion();
+            Activity.Current.SetTlVersion(version);
+            context.Response.Headers.Add("Tl-Version", version);
 
             await _next(context);
         }
@@ -28,28 +28,34 @@ public class VersionHeaderMiddleware
 
 internal static class VersionExtensions
 {
-    internal static (TlVersion, string) GetTlVersion(this HttpRequest httpRequest)
+    internal static string GetTlVersion(this HttpRequest httpRequest)
     {
         if (httpRequest.Headers.TryGetValue("Tl-Version", out var version))
         {
             var date = DateOnly.ParseExact(version.ToString(), "yyyy-MM-dd");
             if (date >= new DateOnly(2023, 06, 30))
-                return (TlVersion.V_2023_06_30, version.ToString());
-            
-            return (TlVersion.V_2023_01_31, version.ToString());
+                return Versions.V_2023_06_30;
+
+            return Versions.V_2023_01_31;
         }
 
         throw new InvalidOperationException("No version set");
     }
 
-    internal static void SetTlVersion(this Activity? activity, TlVersion version)
+    internal static void SetTlVersion(this Activity? activity, string version)
     {
         activity?.SetTag("version", version);
     }
 
-    internal static TlVersion GetTlVersion(this Activity? activity)
+    internal static int CompareToTlVersion(this Activity? activity, string versionToCompare)
     {
-        var version = activity?.GetTagItem("version") as TlVersion?;
-        return version ?? throw new Exception("Oh no, it's null!");
+        var requestVersion = activity?.GetTagItem("version") as string;
+
+        var requestVersionOrder = KnownTlVersions.Instance.GetOrder(requestVersion!);
+        var versionToCompareOrder = KnownTlVersions.Instance.GetOrder(versionToCompare);
+
+        if (requestVersionOrder < versionToCompareOrder) return -1;
+        if (requestVersion == versionToCompare) return 0;
+        return 1;
     }
 }

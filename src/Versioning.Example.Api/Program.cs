@@ -35,12 +35,15 @@ static void DetectIgnoreDataMemberAttribute(JsonTypeInfo typeInfo)
             {
                 // obj = class
                 // value = property
-                return (int)Activity.Current.GetTlVersion()
-                    != fromVersionAttribute.MinimumVersion;
+                var comparisonResult = Activity.Current.CompareToTlVersion(fromVersionAttribute.MinimumVersion);
+                return comparisonResult >= 0;
             };
         }
     }
 }
+
+KnownTlVersions.Instance.Register(Versions.V_2023_01_31);
+KnownTlVersions.Instance.Register(Versions.V_2023_06_30);
 
 var app = builder.Build();
 
@@ -58,13 +61,33 @@ app.Run();
 
 public partial class Program { }
 
-enum TlVersion
+internal static class Versions
 {
-    // Not serialized but will be used in >= conditions
-    // Important to keep dates ordered by earlier date <= later date
-    Unknown = 0,
-    V_2023_01_31 = 1,
-    V_2023_06_30 = 2,
+    internal const string V_2023_01_31 = "2023-01-31";
+    internal const string V_2023_06_30 = "2023-06-30";
+}
+
+public class KnownTlVersions
+{
+    public static KnownTlVersions Instance { get; } = new();
+
+    private readonly Dictionary<string, int> _versions = new();
+    private int _order = 0;
+
+    public void Register(string version)
+    {
+        if (!DateOnly.TryParseExact(version, "yyyy-MM-dd", out _)) throw new InvalidOperationException("Date is not valid");
+
+        _versions[version] = _order++;
+    }
+
+    public int GetOrder(string version)
+    {
+        if (_versions.TryGetValue(version, out var order))
+            return order;
+
+        throw new InvalidOperationException("Version is not registered");
+    }
 }
 
 public record Response
@@ -78,19 +101,19 @@ public record Response
 
     public string parameter { get; set; }
 
-    [FromVersion((int)TlVersion.V_2023_06_30)]
+    [FromVersion(Versions.V_2023_06_30)]
     public int? a_number { get; set; }
 
-    [FromVersion((int)TlVersion.V_2023_06_30)]
+    [FromVersion(Versions.V_2023_06_30)]
     public string? another_parameter { get; set; }
 }
 
 [AttributeUsage(AttributeTargets.Property, AllowMultiple = false)]
 public class FromVersionAttribute : Attribute
 {
-    public int MinimumVersion { get; }
+    public string MinimumVersion { get; }
 
-    public FromVersionAttribute(int minimumVersion)
+    public FromVersionAttribute(string minimumVersion)
     {
         MinimumVersion = minimumVersion;
     }
