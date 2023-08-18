@@ -1,3 +1,5 @@
+using System.Diagnostics;
+
 public class VersionHeaderMiddleware
 {
     private RequestDelegate _next;
@@ -9,10 +11,18 @@ public class VersionHeaderMiddleware
 
     public async Task Invoke(HttpContext context)
     {
-        var version = context.Request.GetTlVersion();
-        context.Response.Headers.Add("Tl-Version", version);
+        try
+        {
+            var version = context.Request.GetTlVersion();
+            Activity.Current?.SetTag("version", version);
+            context.Response.Headers.Add("Tl-Version", version);
 
-        await _next(context);
+            await _next(context);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+        }
     }
 }
 
