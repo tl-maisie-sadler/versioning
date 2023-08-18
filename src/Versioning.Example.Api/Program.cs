@@ -22,7 +22,7 @@ app.MapGet("/", async (HttpContext httpContext) =>
     var version = httpContext.Request.GetTlVersion();
     var result = await handler.Invoke();
 
-    return new Response(result.param1, result.param2);
+    return new Response(result.param1, result.param2, result.number1);
 });
 
 app.Run();
@@ -32,13 +32,17 @@ public partial class Program { }
 [FromVersionConverter<Response>()]
 public record Response
 {
-    public Response(string parameter, string? anotherParameter = null)
+    public Response(string parameter, string? anotherParameter, int? aNumber)
     {
         this.parameter = parameter;
         this.another_parameter = anotherParameter;
+        this.a_number = aNumber;
     }
 
     public string parameter { get; set; }
+
+    [FromVersion("2023-06-30")]
+    public int? a_number { get; set; }
 
     [FromVersion("2023-06-30")]
     public string? another_parameter { get; set; }
@@ -72,7 +76,7 @@ public class FromVersionConverter<T> : JsonConverter<T>
             {
                 writer.WritePropertyName(property.Name);
 
-                var valueConverter = (JsonConverter<string>)options.GetConverter(property.PropertyType!);
+                var valueConverter = (JsonConverter<object>)options.GetConverter(property.PropertyType!);
                 valueConverter.Write(writer, property.GetValue(objectToWrite).ToString(), options);
             }
             if (customAttr != null)
