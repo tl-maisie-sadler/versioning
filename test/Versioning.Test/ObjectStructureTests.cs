@@ -15,10 +15,18 @@ public class ObjectStructureTests
 
     public record TestClass
     {
-        public string? AlwaysThere { get; set; }
+        public string? AlwaysThereString { get; set; }
+        public int? AlwaysThereInt { get; set; }
+        public bool? AlwaysThereBool { get; set; }
 
         [FromVersion(_propertyAvailableFromVersion)]
-        public string? TestProp { get; set; }
+        public string? SkipMeString { get; set; }
+
+        [FromVersion(_propertyAvailableFromVersion)]
+        public int? SkipMeInt { get; set; }
+
+        [FromVersion(_propertyAvailableFromVersion)]
+        public bool? SkipMeBool { get; set; }
     }
 
     private static JsonOptions GetJsonOptions()
@@ -54,9 +62,21 @@ public class ObjectStructureTests
         activity?.SetTag("version", _requestVersion);
 
         // Act
-        var serialized = JsonSerializer.Serialize(new TestClass { AlwaysThere = "hello", TestProp = "hi" }, jsonOptions.SerializerOptions);
+        var serialized = JsonSerializer.Serialize(new TestClass
+        {
+            AlwaysThereString = "property-value",
+            AlwaysThereInt = 23,
+            AlwaysThereBool = true,
+            SkipMeString = "hidden-property-value",
+            SkipMeInt = 33,
+            SkipMeBool = false,
+        }, jsonOptions.SerializerOptions);
 
         // Assert
-        Assert.Equal("{\"alwaysThere\":\"hello\"}", serialized);
+        Assert.Equal(
+            "{\"alwaysThereString\":\"property-value\","
+            + "\"alwaysThereInt\":23,"
+            + "\"alwaysThereBool\":true}",
+            serialized);
     }
 }
