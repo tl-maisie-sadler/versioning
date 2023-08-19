@@ -6,6 +6,7 @@ public class KnownTlVersions
 {
     // todo: can this be non-static?
     public static KnownTlVersions Instance { get; } = new();
+    // static AsyncLocal<string> _asyncLocalString = new AsyncLocal<string>();
 
     private readonly Dictionary<string, DateAndOrder> _versions = new();
     private int _order = 0;

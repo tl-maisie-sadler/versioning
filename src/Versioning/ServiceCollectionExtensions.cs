@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Http.Json;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Versioning;
+
 public static class ServiceCollectionExtensions
 {
     public static IServiceCollection AddVersioning(this IServiceCollection services)
@@ -16,7 +17,7 @@ public static class ServiceCollectionExtensions
             options.SerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
             options.SerializerOptions.TypeInfoResolver = new DefaultJsonTypeInfoResolver
             {
-                Modifiers = { DetectIgnoreDataMemberAttribute }
+                Modifiers = { DetectVersionAttribute },
             };
         });
 
@@ -28,7 +29,7 @@ public static class ServiceCollectionExtensions
         return app;
     }
 
-    private static void DetectIgnoreDataMemberAttribute(JsonTypeInfo typeInfo)
+    private static void DetectVersionAttribute(JsonTypeInfo typeInfo)
     {
         if (typeInfo.Kind != JsonTypeInfoKind.Object)
             return;

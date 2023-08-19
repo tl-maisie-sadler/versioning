@@ -20,6 +20,7 @@ internal static class VersionExtensions
 
     internal static void SetTlVersion(this Activity? activity, string version)
     {
+        // todo: can we do this without using Activity?
         activity?.SetTag("version", version);
     }
 
@@ -27,7 +28,7 @@ internal static class VersionExtensions
     {
         var requestVersion = activity?.GetTagItem("version") as string;
 
-        var requestVersionOrder = KnownTlVersions.Instance.GetOrder(requestVersion!);
+        var requestVersionOrder = KnownTlVersions.Instance.GetOrder(requestVersion ?? throw new InvalidOperationException("Activity version not set"));
         var versionToCompareOrder = KnownTlVersions.Instance.GetOrder(versionToCompare);
 
         if (requestVersionOrder < versionToCompareOrder) return -1;
