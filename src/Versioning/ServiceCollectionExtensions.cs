@@ -23,6 +23,7 @@ public static class ServiceCollectionExtensions
 
         return services;
     }
+
     public static WebApplication UseVersioning(this WebApplication app)
     {
         app.UseMiddleware<VersionHeaderMiddleware>();

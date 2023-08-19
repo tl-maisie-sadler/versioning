@@ -30,15 +30,10 @@ internal static class VersionExtensions
         var requestVersion = activity?.GetTagItem("version") as string
             ?? throw new InvalidOperationException("Activity version not set");
 
-        return CompareDates(requestVersion, versionToCompare);
-    }
-
-    private static int CompareDates(string dateString1, string dateString2)
-    {
-        if (!DateOnly.TryParseExact(dateString1, "yyyy-MM-dd", out var date1)
-            || !DateOnly.TryParseExact(dateString2, "yyyy-MM-dd", out var date2))
+        if (!DateOnly.TryParseExact(requestVersion, "yyyy-MM-dd", out var requestVersionDate)
+            || !DateOnly.TryParseExact(versionToCompare, "yyyy-MM-dd", out var versionToCompareDate))
             throw new InvalidOperationException("Version is not registered");
 
-        return date1.CompareTo(date2);
+        return requestVersionDate.CompareTo(versionToCompareDate);
     }
 }
