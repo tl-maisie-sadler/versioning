@@ -9,8 +9,9 @@ internal static class VersionExtensions
     {
         if (httpRequest.Headers.TryGetValue("Tl-Version", out var version))
         {
-            if (DateOnly.TryParseExact(version.ToString(), "yyyy-MM-dd", out var date))
-                return KnownTlVersions.Instance.FindVersionForDate(date);
+            var versionString = version.ToString();
+            if (DateOnly.TryParseExact(versionString, "yyyy-MM-dd", out var date))
+                return versionString;
 
             throw new Exception($"Invalid version header '{version}'");
         }
@@ -26,13 +27,18 @@ internal static class VersionExtensions
 
     internal static int CompareToTlVersion(this Activity? activity, string versionToCompare)
     {
-        var requestVersion = activity?.GetTagItem("version") as string;
+        var requestVersion = activity?.GetTagItem("version") as string
+            ?? throw new InvalidOperationException("Activity version not set");
 
-        var requestVersionOrder = KnownTlVersions.Instance.GetOrder(requestVersion ?? throw new InvalidOperationException("Activity version not set"));
-        var versionToCompareOrder = KnownTlVersions.Instance.GetOrder(versionToCompare);
+        return CompareDates(requestVersion, versionToCompare);
+    }
 
-        if (requestVersionOrder < versionToCompareOrder) return -1;
-        if (requestVersion == versionToCompare) return 0;
-        return 1;
+    private static int CompareDates(string dateString1, string dateString2)
+    {
+        if (!DateOnly.TryParseExact(dateString1, "yyyy-MM-dd", out var date1)
+            || !DateOnly.TryParseExact(dateString2, "yyyy-MM-dd", out var date2))
+            throw new InvalidOperationException("Version is not registered");
+
+        return date1.CompareTo(date2);
     }
 }

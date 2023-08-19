@@ -6,9 +6,6 @@ builder.Services.AddSingleton<InternalHandler>();
 
 builder.Services.AddVersioning();
 
-KnownTlVersions.Instance.Register(Versions._v_2023_01_31);
-KnownTlVersions.Instance.Register(Versions._v_2023_06_30);
-
 var app = builder.Build();
 
 app.UseMiddleware<ErrorHandlingMiddleware>();

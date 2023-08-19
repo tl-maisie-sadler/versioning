@@ -70,9 +70,6 @@ public class ObjectStructureTests
 
     public ObjectStructureTests()
     {
-        KnownTlVersions.Instance.Register(_requestVersion);
-        KnownTlVersions.Instance.Register(_propertyAvailableFromVersion);
-
         _activitySource = new ActivitySource("Testing");
         var activityListener = new ActivityListener
         {
