@@ -42,15 +42,29 @@ public static class ServiceCollectionExtensions
                 var fromVersion = provider
                     .GetCustomAttributes(typeof(FromVersionAttribute), inherit: true)
                     .FirstOrDefault();
-                if (fromVersion == null) continue;
-                if (fromVersion is not FromVersionAttribute fromVersionAttribute) continue;
+
+                var toVersion = provider
+                    .GetCustomAttributes(typeof(ToVersionAttribute), inherit: true)
+                    .FirstOrDefault();
 
                 propertyInfo.ShouldSerialize = (obj, value) =>
                 {
                     // obj = class
                     // value = property
-                    var comparisonResult = Activity.Current.CompareToTlVersion(fromVersionAttribute.MinimumVersion);
-                    return comparisonResult >= 0;
+                    var tlVersion = Activity.Current.GetTlVersion();
+                    if (fromVersion is FromVersionAttribute fromVersionAttribute)
+                    {
+                        var fromComparisonResult = VersionExtensions.CompareVersions(tlVersion, fromVersionAttribute.MinimumVersion);
+                        if (fromComparisonResult < 0) return false;
+                    }
+
+                    if (toVersion is ToVersionAttribute toVersionAttribute)
+                    {
+                        var toComparisonResult = VersionExtensions.CompareVersions(toVersionAttribute.MaximumVersion, tlVersion);
+                        if (toComparisonResult < 0) return false;
+                    }
+
+                    return true;
                 };
             }
         }

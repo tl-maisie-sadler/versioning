@@ -25,15 +25,19 @@ internal static class VersionExtensions
         activity?.SetTag("version", version);
     }
 
-    internal static int CompareToTlVersion(this Activity? activity, string versionToCompare)
+    internal static string GetTlVersion(this Activity? activity)
     {
-        var requestVersion = activity?.GetTagItem("version") as string
+        return activity?.GetTagItem("version") as string
             ?? throw new InvalidOperationException("Activity version not set");
+    }
 
-        if (!DateOnly.TryParseExact(requestVersion, "yyyy-MM-dd", out var requestVersionDate)
-            || !DateOnly.TryParseExact(versionToCompare, "yyyy-MM-dd", out var versionToCompareDate))
+    internal static int CompareVersions(string dateOneString, string dateTwoString)
+    {
+
+        if (!DateOnly.TryParseExact(dateOneString, "yyyy-MM-dd", out var dateOne)
+            || !DateOnly.TryParseExact(dateTwoString, "yyyy-MM-dd", out var dateTwo))
             throw new InvalidOperationException("Version is not registered");
 
-        return requestVersionDate.CompareTo(versionToCompareDate);
+        return dateOneString.CompareTo(dateTwoString);
     }
 }
