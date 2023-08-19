@@ -30,9 +30,9 @@ public class DifferentResponseTests
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         var responseJson = JsonNode.Parse(await response.Content.ReadAsStringAsync())!.AsObject();
 
-        Assert.Equal(1, responseJson.Count());
-        Assert.True(responseJson.TryGetPropertyValue("parameter", out var parameterVal1));
-        Assert.Equal("value 1", parameterVal1!.ToString());
+        var kv = Assert.Single(responseJson.AsEnumerable());
+        Assert.Equal("parameter", kv.Key);
+        Assert.Equal("value 1", kv.Value?.ToString());
     }
 
     [Fact]

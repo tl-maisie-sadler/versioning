@@ -1,30 +1,7 @@
 using System.Diagnostics;
+using Microsoft.AspNetCore.Http;
 
-public class VersionHeaderMiddleware
-{
-    private RequestDelegate _next;
-
-    public VersionHeaderMiddleware(RequestDelegate next)
-    {
-        _next = next;
-    }
-
-    public async Task Invoke(HttpContext context)
-    {
-        try
-        {
-            var version = context.Request.GetTlVersion();
-            Activity.Current.SetTlVersion(version);
-            context.Response.Headers.Add("Tl-Version", version);
-
-            await _next(context);
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine(ex.Message);
-        }
-    }
-}
+namespace Versioning;
 
 internal static class VersionExtensions
 {
@@ -32,11 +9,10 @@ internal static class VersionExtensions
     {
         if (httpRequest.Headers.TryGetValue("Tl-Version", out var version))
         {
-            var date = DateOnly.ParseExact(version.ToString(), "yyyy-MM-dd");
-            if (date >= new DateOnly(2023, 06, 30))
-                return Versions._v_2023_06_30;
+            if (DateOnly.TryParseExact(version.ToString(), "yyyy-MM-dd", out var date))
+                return KnownTlVersions.Instance.FindVersionForDate(date);
 
-            return Versions._v_2023_01_31;
+            throw new Exception($"Invalid version header '{version}'");
         }
 
         throw new InvalidOperationException("No version set");
