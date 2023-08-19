@@ -8,6 +8,11 @@ namespace Versioning.Test;
 
 public class ObjectStructureTests
 {
+    public record SingleTestClassContainer
+    {
+        public TestClass? Nested { get; set; }
+    }
+
     public record TestClassCollection
     {
         public TestClass[]? Collection { get; set; }
@@ -91,6 +96,26 @@ public class ObjectStructureTests
 
         // Assert
         Assert.Equal(_expectedSerializedTestClass, serialized);
+    }
+
+    [Fact]
+    public void NestedTestClass_SkipProperty()
+    {
+        // Arrange
+        using var activity = _activitySource.StartActivity("test", ActivityKind.Internal);
+        activity?.SetTag("version", _requestVersion);
+
+        var collection = new SingleTestClassContainer()
+        {
+            Nested = CreateTestClass(),
+        };
+
+        // Act
+        var serialized = JsonSerializer.Serialize(collection, _jsonOptions.SerializerOptions);
+
+        // Assert
+        var expected = "{\"nested\":" + _expectedSerializedTestClass + "}";
+        Assert.Equal(expected, serialized);
     }
 
     [Fact]
