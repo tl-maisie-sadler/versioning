@@ -2,3 +2,4 @@
 - Fallback to token
 - Requested version isn't registered
 - Requested version before registered date
+- Register dates in any order

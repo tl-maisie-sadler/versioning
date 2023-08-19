@@ -8,7 +8,7 @@ namespace Versioning.Test;
 
 public class ObjectStructureTests
 {
-    private const string _skipFrom = "2023-08-19";
+    private const string _propertyAvailableFromVersion = "2023-08-19";
     private const string _requestVersion = "2023-08-01";
 
     private readonly ActivitySource _activitySource;
@@ -17,7 +17,7 @@ public class ObjectStructureTests
     {
         public string? AlwaysThere { get; set; }
 
-        [FromVersion(_skipFrom)]
+        [FromVersion(_propertyAvailableFromVersion)]
         public string? TestProp { get; set; }
     }
 
@@ -43,10 +43,11 @@ public class ObjectStructureTests
     }
 
     [Fact]
-    public void Test1()
+    public void SimpleObject_SkipProperty()
     {
         // Arrange
         KnownTlVersions.Instance.Register(_requestVersion);
+        KnownTlVersions.Instance.Register(_propertyAvailableFromVersion);
         var jsonOptions = GetJsonOptions();
 
         using var activity = _activitySource.StartActivity("test", ActivityKind.Internal);
