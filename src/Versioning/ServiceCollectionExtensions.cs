@@ -39,29 +39,22 @@ public static class ServiceCollectionExtensions
         {
             if (propertyInfo.AttributeProvider is ICustomAttributeProvider provider)
             {
-                var fromVersion = provider
-                    .GetCustomAttributes(typeof(FromVersionAttribute), inherit: true)
-                    .FirstOrDefault();
-
-                var toVersion = provider
-                    .GetCustomAttributes(typeof(ToVersionAttribute), inherit: true)
-                    .FirstOrDefault();
+                var versionAttributes = provider
+                    .GetCustomAttributes(typeof(TrueLayerVersionAttribute), inherit: true);
 
                 propertyInfo.ShouldSerialize = (obj, value) =>
                 {
                     // obj = class
                     // value = property
                     var tlVersion = Activity.Current.GetTlVersion();
-                    if (fromVersion is FromVersionAttribute fromVersionAttribute)
-                    {
-                        var fromComparisonResult = VersionExtensions.CompareVersions(tlVersion, fromVersionAttribute.MinimumVersion);
-                        if (fromComparisonResult < 0) return false;
-                    }
 
-                    if (toVersion is ToVersionAttribute toVersionAttribute)
+                    foreach (var versionAttribute in versionAttributes)
                     {
-                        var toComparisonResult = VersionExtensions.CompareVersions(toVersionAttribute.MaximumVersion, tlVersion);
-                        if (toComparisonResult < 0) return false;
+                        if (versionAttribute is TrueLayerVersionAttribute trueLayerVersionAttribute)
+                        {
+                            if (trueLayerVersionAttribute.ShouldSkipForVersion(tlVersion))
+                                return false;
+                        }
                     }
 
                     return true;
