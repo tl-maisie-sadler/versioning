@@ -14,7 +14,6 @@ public static class ServiceCollectionExtensions
     {
         services.Configure<JsonOptions>(options =>
         {
-            options.SerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
             options.SerializerOptions.TypeInfoResolver = new DefaultJsonTypeInfoResolver
             {
                 Modifiers = { DetectVersionAttribute },
