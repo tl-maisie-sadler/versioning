@@ -18,6 +18,18 @@ public class ExpectedOutputTests
         ActivitySource.AddActivityListener(activityListener);
     }
 
+    private readonly string _expectedOutputWithoutVersioning = "{"
+        + "\"NestedVisible\":{\"Shown\":\"value\",\"SkipMe\":\"***\"},"
+        + "\"NestedCollectionVisible\":[{\"Shown\":\"value\",\"SkipMe\":\"***\"},{\"Shown\":\"value\",\"SkipMe\":\"***\"},{\"Shown\":\"value\",\"SkipMe\":\"***\"},{\"Shown\":\"value\",\"SkipMe\":\"***\"},{\"Shown\":\"value\",\"SkipMe\":\"***\"},{\"Shown\":\"value\",\"SkipMe\":\"***\"},{\"Shown\":\"value\",\"SkipMe\":\"***\"},{\"Shown\":\"value\",\"SkipMe\":\"***\"},{\"Shown\":\"value\",\"SkipMe\":\"***\"},{\"Shown\":\"value\",\"SkipMe\":\"***\"}],"
+        + "\"NestedSkipped\":{\"Shown\":\"value\",\"SkipMe\":\"***\"},"
+        + "\"NestedCollectionSkipped\":[{\"Shown\":\"value\",\"SkipMe\":\"***\"},{\"Shown\":\"value\",\"SkipMe\":\"***\"},{\"Shown\":\"value\",\"SkipMe\":\"***\"},{\"Shown\":\"value\",\"SkipMe\":\"***\"},{\"Shown\":\"value\",\"SkipMe\":\"***\"},{\"Shown\":\"value\",\"SkipMe\":\"***\"},{\"Shown\":\"value\",\"SkipMe\":\"***\"},{\"Shown\":\"value\",\"SkipMe\":\"***\"},{\"Shown\":\"value\",\"SkipMe\":\"***\"},{\"Shown\":\"value\",\"SkipMe\":\"***\"}]"
+        + "}";
+
+    private readonly string _expectedOutputWithVersioning = "{"
+        + "\"nestedVisible\":{\"shown\":\"value\"},"
+        + "\"nestedCollectionVisible\":[{\"shown\":\"value\"},{\"shown\":\"value\"},{\"shown\":\"value\"},{\"shown\":\"value\"},{\"shown\":\"value\"},{\"shown\":\"value\"},{\"shown\":\"value\"},{\"shown\":\"value\"},{\"shown\":\"value\"},{\"shown\":\"value\"}]"
+        + "}";
+
     [Fact]
     public void WithoutVersioningOutputIsAsExpected()
     {
@@ -31,13 +43,7 @@ public class ExpectedOutputTests
         var output = x.WithoutVersioning();
 
         // Assert
-        var expectedOutput = "{"
-            + "\"NestedVisible\":{\"Shown\":\"value\",\"SkipMe\":\"***\"},"
-            + "\"NestedCollectionVisible\":[{\"Shown\":\"value\",\"SkipMe\":\"***\"},{\"Shown\":\"value\",\"SkipMe\":\"***\"},{\"Shown\":\"value\",\"SkipMe\":\"***\"},{\"Shown\":\"value\",\"SkipMe\":\"***\"},{\"Shown\":\"value\",\"SkipMe\":\"***\"},{\"Shown\":\"value\",\"SkipMe\":\"***\"},{\"Shown\":\"value\",\"SkipMe\":\"***\"},{\"Shown\":\"value\",\"SkipMe\":\"***\"},{\"Shown\":\"value\",\"SkipMe\":\"***\"},{\"Shown\":\"value\",\"SkipMe\":\"***\"}],"
-            + "\"NestedSkipped\":{\"Shown\":\"value\",\"SkipMe\":\"***\"},"
-            + "\"NestedCollectionSkipped\":[{\"Shown\":\"value\",\"SkipMe\":\"***\"},{\"Shown\":\"value\",\"SkipMe\":\"***\"},{\"Shown\":\"value\",\"SkipMe\":\"***\"},{\"Shown\":\"value\",\"SkipMe\":\"***\"},{\"Shown\":\"value\",\"SkipMe\":\"***\"},{\"Shown\":\"value\",\"SkipMe\":\"***\"},{\"Shown\":\"value\",\"SkipMe\":\"***\"},{\"Shown\":\"value\",\"SkipMe\":\"***\"},{\"Shown\":\"value\",\"SkipMe\":\"***\"},{\"Shown\":\"value\",\"SkipMe\":\"***\"}]"
-            + "}";
-        Assert.Equal(expectedOutput, output);
+        Assert.Equal(_expectedOutputWithoutVersioning, output);
     }
 
     [Fact]
@@ -53,10 +59,48 @@ public class ExpectedOutputTests
         var output = x.WithVersioning();
 
         // Assert
-        var expectedOutput = "{"
-            + "\"nestedVisible\":{\"shown\":\"value\"},"
-            + "\"nestedCollectionVisible\":[{\"shown\":\"value\"},{\"shown\":\"value\"},{\"shown\":\"value\"},{\"shown\":\"value\"},{\"shown\":\"value\"},{\"shown\":\"value\"},{\"shown\":\"value\"},{\"shown\":\"value\"},{\"shown\":\"value\"},{\"shown\":\"value\"}]"
-            + "}";
-        Assert.Equal(expectedOutput, output);
+        Assert.Equal(_expectedOutputWithVersioning, output);
+    }
+
+    [Fact]
+    public void CanBeCalledMultipleTimes()
+    {
+        // Arrange
+        using var activity = _activitySource.StartActivity("test", ActivityKind.Internal);
+        activity?.SetTag("version", Versions.VersionNow);
+
+        var x = new SerializationWithVersioningBenchmark();
+
+        // Act & Assert
+        for (var i = 0; i < 100; i++)
+        {
+            Assert.Equal(_expectedOutputWithVersioning, x.WithVersioning());
+            Assert.Equal(_expectedOutputWithoutVersioning, x.WithoutVersioning());
+        }
+    }
+
+    [Fact]
+    public async void CanBeCalledInParallel()
+    {
+        // Arrange
+        using var activity = _activitySource.StartActivity("test", ActivityKind.Internal);
+        activity?.SetTag("version", Versions.VersionNow);
+
+        var x = new SerializationWithVersioningBenchmark();
+
+        // Act & Assert
+        void RunTest()
+        {
+            for (var i = 0; i < 100; i++)
+            {
+                Assert.Equal(_expectedOutputWithVersioning, x!.WithVersioning());
+                Assert.Equal(_expectedOutputWithoutVersioning, x.WithoutVersioning());
+            }
+        }
+
+        var t1 = Task.Run(() => RunTest());
+        var t2 = Task.Run(() => RunTest());
+
+        await Task.WhenAll(t1, t2);
     }
 }

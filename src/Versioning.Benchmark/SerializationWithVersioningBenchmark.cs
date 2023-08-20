@@ -32,11 +32,6 @@ public record ResponseInner
     public string? SkipMe { get; set; }
 }
 
-[JsonExporterAttribute.Full()]
-[CsvMeasurementsExporter()]
-[CsvExporter(CsvSeparator.Comma)]
-[HtmlExporter()]
-[MarkdownExporterAttribute.GitHub()]
 public class SerializationWithVersioningBenchmark
 {
     private readonly Response _response;
@@ -59,14 +54,14 @@ public class SerializationWithVersioningBenchmark
         _jsonOptions = sp.GetRequiredService<IOptions<JsonOptions>>().Value;
     }
 
-    [Benchmark]
+    [Benchmark(Baseline = true)]
     public string WithoutVersioning()
     {
         var serialized = JsonSerializer.Serialize(_response);
         return serialized;
     }
 
-    [Benchmark(Baseline = true)]
+    [Benchmark]
     public string WithVersioning()
     {
         var serialized = JsonSerializer.Serialize(_response, _jsonOptions.SerializerOptions);
