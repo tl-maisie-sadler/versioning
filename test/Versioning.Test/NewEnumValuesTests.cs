@@ -15,6 +15,7 @@ public class NewEnumValuesTests
     public record TestClass
     {
         public TestValues? Result { get; set; }
+        public TestValues? NewPropertyResult { get; set; }
     }
 
     private const string _dateBefore = "2023-08-01";
@@ -66,14 +67,15 @@ public class NewEnumValuesTests
 
         var testClass = new TestClass()
         {
-            Result = TestValues.Fail_Specific,
+            Result = TestValues.Pass,
+            NewPropertyResult = TestValues.Fail_Specific,
         };
 
         // Act
         var serialized = JsonSerializer.Serialize(testClass, jsonOptions.SerializerOptions);
 
         // Assert
-        Assert.Equal("{\"result\":\"Fail\"}", serialized);
+        Assert.Equal("{\"result\":\"Pass\",\"newPropertyResult\":\"Fail\"}", serialized);
     }
 
     [Fact]
@@ -86,14 +88,15 @@ public class NewEnumValuesTests
 
         var testClass = new TestClass()
         {
-            Result = TestValues.Fail_Specific,
+            Result = TestValues.Pass,
+            NewPropertyResult = TestValues.Fail_Specific,
         };
 
         // Act
         var serialized = JsonSerializer.Serialize(testClass, jsonOptions.SerializerOptions);
 
         // Assert
-        Assert.Equal("{\"result\":\"Fail_Specific\"}", serialized);
+        Assert.Equal("{\"result\":\"Pass\",\"newPropertyResult\":\"Fail_Specific\"}", serialized);
     }
 
     [Fact]
@@ -106,13 +109,14 @@ public class NewEnumValuesTests
 
         var testClass = new TestClass()
         {
-            Result = TestValues.Fail_Specific,
+            Result = TestValues.Pass,
+            NewPropertyResult = TestValues.Fail_Specific,
         };
 
         // Act
         var serialized = JsonSerializer.Serialize(testClass, jsonOptions.SerializerOptions);
 
         // Assert
-        Assert.Equal("{\"result\":\"Fail_Specific\"}", serialized);
+        Assert.Equal("{\"result\":\"Pass\",\"newPropertyResult\":\"Fail_Specific\"}", serialized);
     }
 }
