@@ -16,7 +16,7 @@ public class NewEnumValuesTests
     }
     public record TestClass
     {
-        [JsonConverter(typeof(ObjectToInferredTypesConverter))]
+        [JsonConverter(typeof(CustomObjectToInferredTypesConverter))]
         public TestValues? Result { get; set; }
     }
 
@@ -25,23 +25,36 @@ public class NewEnumValuesTests
 
     private readonly ActivitySource _activitySource;
 
-    public class ObjectToInferredTypesConverter : JsonConverter<TestValues>
+    public abstract class StringEnumValueConverter<TEnum> : JsonConverter<TEnum>
+        where TEnum : struct, Enum
     {
-        public override TestValues Read(
+        public override TEnum Read(
             ref Utf8JsonReader reader,
             Type typeToConvert,
             JsonSerializerOptions options) => throw new NotImplementedException();
 
         public override void Write(
             Utf8JsonWriter writer,
-            TestValues objectToWrite,
+            TEnum objectToWrite,
             JsonSerializerOptions options)
         {
-            if (objectToWrite == TestValues.Fail_Specific)
-                objectToWrite = TestValues.Fail;
+            objectToWrite = ConvertValue(objectToWrite);
 
             var enumString = TypeDescriptor.GetConverter(objectToWrite).ConvertTo(objectToWrite, typeof(string))?.ToString();
             writer.WriteStringValue(enumString);
+        }
+
+        protected abstract TEnum ConvertValue(TEnum value);
+    }
+
+    public class CustomObjectToInferredTypesConverter : StringEnumValueConverter<TestValues>
+    {
+        protected override TestValues ConvertValue(TestValues value)
+        {
+            if (value == TestValues.Fail_Specific)
+                return TestValues.Fail;
+
+            return value;
         }
     }
 
