@@ -1,5 +1,6 @@
 ﻿using System.Diagnostics;
 using System.Reflection;
+using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
 using Microsoft.AspNetCore.Builder;
@@ -18,6 +19,8 @@ public static class ServiceCollectionExtensions
             {
                 Modifiers = { DetectVersionAttribute },
             };
+            // options.SerializerOptions.Converters
+            //     .Add<>();
         });
 
         return services;
