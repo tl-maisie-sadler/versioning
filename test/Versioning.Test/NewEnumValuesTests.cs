@@ -1,7 +1,5 @@
-using System.ComponentModel;
 using System.Diagnostics;
 using System.Text.Json;
-using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Http.Json;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
@@ -16,45 +14,20 @@ public class NewEnumValuesTests
     }
     public record TestClass
     {
-        [JsonConverter(typeof(CustomObjectToInferredTypesConverter))]
         public TestValues? Result { get; set; }
     }
 
     private const string _dateBefore = "2023-08-01";
     private const string _propertyAvailableFromVersion = "2023-08-10";
+    private const string _dateAfter = "2023-08-15";
 
     private readonly ActivitySource _activitySource;
 
-    public abstract class StringEnumValueConverter<TEnum> : JsonConverter<TEnum>
-        where TEnum : struct, Enum
-    {
-        public override TEnum Read(
-            ref Utf8JsonReader reader,
-            Type typeToConvert,
-            JsonSerializerOptions options) => throw new NotImplementedException();
-
-        public override void Write(
-            Utf8JsonWriter writer,
-            TEnum objectToWrite,
-            JsonSerializerOptions options)
-        {
-            objectToWrite = ConvertValue(objectToWrite);
-
-            var enumString = TypeDescriptor.GetConverter(objectToWrite).ConvertTo(objectToWrite, typeof(string))?.ToString();
-            writer.WriteStringValue(enumString);
-        }
-
-        protected abstract TEnum ConvertValue(TEnum value);
-    }
-
     public class CustomObjectToInferredTypesConverter : StringEnumValueConverter<TestValues>
     {
-        protected override TestValues ConvertValue(TestValues value)
+        public CustomObjectToInferredTypesConverter()
         {
-            if (value == TestValues.Fail_Specific)
-                return TestValues.Fail;
-
-            return value;
+            BeforeVersion(_propertyAvailableFromVersion, TestValues.Fail_Specific, TestValues.Fail);
         }
     }
 
@@ -62,6 +35,10 @@ public class NewEnumValuesTests
     {
         var services = new ServiceCollection();
         services.AddVersioning();
+        services.Configure<JsonOptions>(options =>
+        {
+            options.SerializerOptions.Converters.Add(new CustomObjectToInferredTypesConverter());
+        });
         var sp = services.BuildServiceProvider();
 
         return sp.GetRequiredService<IOptions<JsonOptions>>().Value;
@@ -97,5 +74,45 @@ public class NewEnumValuesTests
 
         // Assert
         Assert.Equal("{\"result\":\"Fail\"}", serialized);
+    }
+
+    [Fact]
+    public void OnAvailable_PropertyShouldShowNewValue()
+    {
+        // Arrange
+        using var activity = _activitySource.StartActivity("test", ActivityKind.Internal);
+        activity?.SetTag("version", _propertyAvailableFromVersion);
+        var jsonOptions = GetJsonOptions();
+
+        var testClass = new TestClass()
+        {
+            Result = TestValues.Fail_Specific,
+        };
+
+        // Act
+        var serialized = JsonSerializer.Serialize(testClass, jsonOptions.SerializerOptions);
+
+        // Assert
+        Assert.Equal("{\"result\":\"Fail_Specific\"}", serialized);
+    }
+
+    [Fact]
+    public void AfterDateAvailable_PropertyShouldShowNewValue()
+    {
+        // Arrange
+        using var activity = _activitySource.StartActivity("test", ActivityKind.Internal);
+        activity?.SetTag("version", _dateAfter);
+        var jsonOptions = GetJsonOptions();
+
+        var testClass = new TestClass()
+        {
+            Result = TestValues.Fail_Specific,
+        };
+
+        // Act
+        var serialized = JsonSerializer.Serialize(testClass, jsonOptions.SerializerOptions);
+
+        // Assert
+        Assert.Equal("{\"result\":\"Fail_Specific\"}", serialized);
     }
 }
