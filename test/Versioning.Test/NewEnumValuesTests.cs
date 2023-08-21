@@ -1,11 +1,10 @@
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using System.Text.Json.Serialization.Metadata;
 using Microsoft.AspNetCore.Http.Json;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
-using Newtonsoft.Json.Converters;
 
 namespace Versioning.Test;
 
@@ -17,7 +16,7 @@ public class NewEnumValuesTests
     }
     public record TestClass
     {
-        [JsonConverter(typeof(JsonStringEnumConverter))]
+        [JsonConverter(typeof(ObjectToInferredTypesConverter))]
         public TestValues? Result { get; set; }
     }
 
@@ -25,6 +24,26 @@ public class NewEnumValuesTests
     private const string _propertyAvailableFromVersion = "2023-08-10";
 
     private readonly ActivitySource _activitySource;
+
+    public class ObjectToInferredTypesConverter : JsonConverter<TestValues>
+    {
+        public override TestValues Read(
+            ref Utf8JsonReader reader,
+            Type typeToConvert,
+            JsonSerializerOptions options) => throw new NotImplementedException();
+
+        public override void Write(
+            Utf8JsonWriter writer,
+            TestValues objectToWrite,
+            JsonSerializerOptions options)
+        {
+            if (objectToWrite == TestValues.Fail_Specific)
+                objectToWrite = TestValues.Fail;
+
+            var enumString = TypeDescriptor.GetConverter(objectToWrite).ConvertTo(objectToWrite, typeof(string))?.ToString();
+            writer.WriteStringValue(enumString);
+        }
+    }
 
     private static JsonOptions GetJsonOptions()
     {
