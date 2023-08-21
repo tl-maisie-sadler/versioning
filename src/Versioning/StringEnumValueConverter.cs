@@ -8,6 +8,8 @@ namespace Versioning;
 public abstract class StringEnumValueConverter<TEnum> : JsonConverter<TEnum>
     where TEnum : struct, Enum
 {
+    private record MapEnumBeforeVersionRule(string Version, TEnum Value);
+
     public override TEnum Read(
         ref Utf8JsonReader reader,
         Type typeToConvert,
@@ -24,23 +26,28 @@ public abstract class StringEnumValueConverter<TEnum> : JsonConverter<TEnum>
         writer.WriteStringValue(enumString);
     }
 
-    private readonly List<(string version, TEnum valueToMap, TEnum mappedValue)> _mappings = new();
+    private readonly Dictionary<TEnum, List<MapEnumBeforeVersionRule>> _mappings = new();
 
-    protected void BeforeVersion(string version, TEnum valueToMap, TEnum mappedValue)
+    protected void MapValueBeforeVersion(string version, TEnum valueToMap, TEnum mappedValue)
     {
-        _mappings.Add((version, valueToMap, mappedValue));
+        if (!_mappings.ContainsKey(valueToMap)) _mappings[valueToMap] = new();
+
+        _mappings[valueToMap].Add(new(version, mappedValue));
     }
 
     private TEnum ConvertValue(TEnum value)
     {
         var requestVersion = Activity.Current.GetTlVersion();
-        foreach (var (version, valueToMap, mappedValue) in _mappings)
+        if (_mappings.TryGetValue(value, out var rules))
         {
-            var toComparisonResult = VersionExtensions.CompareVersions(version, requestVersion);
-            var ruleApplies = toComparisonResult > 0;
-            if (ruleApplies && value.Equals(valueToMap))
+            foreach (var rule in rules)
             {
-                return mappedValue;
+                var toComparisonResult = VersionExtensions.CompareVersions(rule.Version, requestVersion);
+                var ruleApplies = toComparisonResult > 0;
+                if (ruleApplies)
+                {
+                    return rule.Value;
+                }
             }
         }
 

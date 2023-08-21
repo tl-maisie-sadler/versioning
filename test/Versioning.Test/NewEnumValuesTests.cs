@@ -27,7 +27,7 @@ public class NewEnumValuesTests
     {
         public CustomObjectToInferredTypesConverter()
         {
-            BeforeVersion(_propertyAvailableFromVersion, TestValues.Fail_Specific, TestValues.Fail);
+            MapValueBeforeVersion(_propertyAvailableFromVersion, TestValues.Fail_Specific, TestValues.Fail);
         }
     }
 
